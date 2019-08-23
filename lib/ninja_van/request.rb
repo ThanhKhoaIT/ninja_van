@@ -8,7 +8,7 @@ module NinjaVan
         .post(full_endpoint, json: params)
       raise NinjaVan::ForbiddenError.new(full_endpoint) if response.code == 403
       raise NinjaVan::ServerError.new(full_endpoint) if response.code == 500
-      raise NinjaVan::RequestError.new(response.parse) unless response.parse['error'].nil?
+      raise NinjaVan::RequestError.new(response.parse) if response.parse.is_a?(Hash) && !response.parse['error'].nil?
       response.parse
     end
 
@@ -28,6 +28,7 @@ module NinjaVan
         .auth("Bearer #{NinjaVan.setup.get_token_from_cache}")
         .get(full_endpoint, params: params)
       raise NinjaVan::ForbiddenError.new(full_endpoint) if response.code == 403
+      raise NinjaVan::NotFoundError.new(response.parse) if response.code == 404
       raise NinjaVan::ServerError.new(full_endpoint) if response.code == 500
       response.parse
     end
@@ -38,6 +39,7 @@ module NinjaVan
         .auth("Bearer #{NinjaVan.setup.get_token_from_cache}")
         .delete(full_endpoint, params: params)
       raise NinjaVan::ForbiddenError.new(full_endpoint) if response.code == 403
+      raise NinjaVan::NotFoundError.new(response.parse) if response.code == 404
       raise NinjaVan::ServerError.new(full_endpoint) if response.code == 500
       response.parse
     end
