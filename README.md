@@ -1,8 +1,5 @@
-# NinjaVan
-
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/ninja_van`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+# NinjaVan API Caller
+**GHTK Documentation:** https://ninjaorderapibeta.docs.apiary.io
 
 ## Installation
 
@@ -20,24 +17,71 @@ Or install it yourself as:
 
     $ gem install ninja_van
 
+## Setup for Rails
+
+Add `config/initializers/ninjavan.rb` file
+```ruby
+  NinjaVan.setup do |config|
+    # Add your config diff by the environment
+    config.domain = Rails.application.secrets.ninjavan_endpoint
+    config.client_id = Rails.application.secrets.ninjavan_client_id
+    config.client_secret = Rails.application.secrets.ninjavan_client_secret
+    config.grant_type = :client_credentials
+
+    # Set class for getting token from the cache to optimize request getting a new token
+    config.get_token_from_cache_klass = Ninjavan::AccessTokenFromCacheService
+
+    config.get_access_token_endpoint = '/2.0/oauth/access_token'
+    config.create_endpoint = '/4.1/orders'
+    config.get_detail_endpoint = '/3.0/orders'
+    config.get_status_endpoint = '/2.0/track'
+    config.cancel_endpoint = '/2.2/orders/'
+  end
+```
+
+**Example** for `Ninjavan::AccessTokenFromCacheService` class
+```ruby
+module Ninjavan
+  class AccessTokenFromCacheService
+    def call
+      token = Rails.cache.fetch('ninjavan_token')
+      return token if token
+      response = NinjaVan::AccessToken.get
+      Rails.cache.fetch('ninjavan_token', expires_in: response['expires_in'] - 5.minute) { response["access_token"] }
+    end
+  end
+end
+```
+
 ## Usage
+#### How to create Order
+With **ActiveModel::Serializer**
+```ruby
+  serializer = NinjavanSerializer.new(Shipment.last)
+  NinjaVan::Order.create(serializer)
+```
+Or by **Hash**
 
-TODO: Write usage instructions here
+```ruby
+  request_data = {...}
+  NinjaVan::Order.create(request_data)
+```
+- Request data: [view JSON file](https://bit.ly/33RJicn)
+- Success response: [view JSON file](https://bit.ly/2Ziswoh)
 
-## Development
+- Ninjavan documentation: [detail](https://ninjaorderapibeta.docs.apiary.io/#reference/0/create-order-v41-latest/post)
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+#### How to get Order detail
+```ruby
+  NinjaVan::Order.get_detail(tracking_id: 'NVSG00000000000000')
+```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+#### How to get Order status
+```ruby
+  NinjaVan::Order.get_status(trackingIds: ['NVSG00000000000000'])
+```
 
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/ninja_van. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
-
-## License
-
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
-## Code of Conduct
-
-Everyone interacting in the NinjaVan project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/ninja_van/blob/master/CODE_OF_CONDUCT.md).
+#### How to cancel Order
+```ruby
+  NinjaVan::Order.cancel('NVSG00000000000000')
+```
