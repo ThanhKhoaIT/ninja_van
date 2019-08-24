@@ -2,7 +2,7 @@ module NinjaVan::Validations
   class OrderValidation
 
     def initialize(hash)
-      @hash = hash.symbolize_keys
+      @hash = hash.to_deep_symbolize_keys
     end
 
     def validate!

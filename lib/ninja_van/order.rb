@@ -7,7 +7,7 @@ module NinjaVan
         NinjaVan::Validations::OrderValidation.new(create_data).validate!
         NinjaVan::Request.post(NinjaVan.setup.require!(:create_endpoint), create_data)
       rescue NinjaVan::RequestError => exception
-        raise NinjaVan::CreateOrderError.new(create_data.merge(exception.response.deep_symbolize_keys))
+        raise NinjaVan::CreateOrderError.new(create_data.merge(exception.response.to_deep_symbolize_keys))
       rescue => exception
         raise NinjaVan::CreateOrderError.new(create_data.merge({ error: exception.to_s }))
       end

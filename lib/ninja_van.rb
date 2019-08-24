@@ -1,4 +1,5 @@
 require "http"
+require "ninja_van/support/hash"
 require "ninja_van/version"
 require "ninja_van/error"
 require "ninja_van/config"
